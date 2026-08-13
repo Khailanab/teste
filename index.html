@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Election Center — Urna Oficial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+</head>
+<body>
+  <div id="configWarning" class="config-warning" hidden>
+    ⚠ Firebase ainda não configurado. Abra <b>app.js</b> e preencha <code>FIREBASE_CONFIG</code>, <code>ADMIN_EMAIL</code> e <code>ADMIN_UID</code>.
+  </div>
+
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div>
+        <div class="brand-eyebrow"><span class="live-dot"></span>Sistema oficial de votação</div>
+        <h1 class="brand-title">ELECTION <span>CENTER</span></h1>
+        <div class="brand-subtitle">Urna Eleitoral · Ballot Terminal</div>
+      </div>
+      <div class="masthead-right">
+        <div id="headerElectionLabel">Nenhuma votação aberta</div>
+        <button id="adminToggle" class="admin-btn">Entrar como admin</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="publicApp" class="public-shell">
+      <div id="publicStatusBar" class="status-strip" hidden></div>
+
+      <section id="screenClosed" class="screen panel closed-panel" hidden>
+        <div class="closed-copy">
+          <div class="hero-kicker">Election Center · Ballot Desk</div>
+          <div class="closed-status"><span></span> VOTAÇÃO INDISPONÍVEL</div>
+          <h2>As urnas estão fechadas</h2>
+          <p id="closedMessage">Não há nenhuma eleição aberta neste momento.</p>
+        </div>
+        <div class="closed-mark" aria-hidden="true">
+          <div class="seal-mark">EC</div>
+          <span>OFFICIAL BALLOT SYSTEM</span>
+        </div>
+      </section>
+
+      <section id="screenHome" class="screen panel election-landing" hidden>
+        <div class="election-landing-main">
+          <div class="hero-kicker">Election Center · Eleição disponível</div>
+          <div class="landing-status-line"><span class="live-dot"></span> URNAS ABERTAS</div>
+          <h2 id="homeElectionName">—</h2>
+          <div class="landing-year-row"><span class="landing-year-rule"></span><div class="home-year" id="homeElectionYear">—</div><span class="landing-year-label">OFFICIAL BALLOT</span></div>
+          <p id="homeElectionDescription"></p>
+          <div class="home-meta-grid">
+            <div class="home-meta-card"><span>Status da votação</span><b class="status-open">ABERTA</b></div>
+            <div class="home-meta-card"><span>Estados habilitados</span><b id="homeStateCount">0</b></div>
+            <div class="home-meta-card"><span>Sistema</span><b>Voto nominal</b></div>
+          </div>
+        </div>
+        <aside class="election-access-card">
+          <div class="access-card-top">
+            <span>ACESSO À URNA</span>
+            <b>01</b>
+          </div>
+          <div class="access-card-body">
+            <div class="access-icon">✓</div>
+            <h3>Registrar voto</h3>
+            <p>Identifique-se, selecione seu estado e complete as disputas disponíveis na sua cédula.</p>
+            <button id="startVotingBtn" class="primary-btn hero-action">Iniciar votação <span>→</span></button>
+            <div class="access-security"><span>●</span> Voto computado somente após confirmação final</div>
+          </div>
+        </aside>
+      </section>
+
+      <section id="screenIdentity" class="screen panel form-panel" hidden>
+        <div class="section-heading">
+          <div><span>Etapa 1</span><h2>Identificação do eleitor</h2></div>
+          <button class="link-btn" data-action="back-home">Cancelar</button>
+        </div>
+        <p class="section-copy">Preencha seus dados exatamente como serão usados na auditoria da eleição.</p>
+        <form id="identityForm" class="identity-grid">
+          <label>Nome<input id="firstNameInput" type="text" maxlength="60" autocomplete="given-name" required></label>
+          <label>Sobrenome<input id="lastNameInput" type="text" maxlength="80" autocomplete="family-name" required></label>
+          <label>@ do Discord<input id="discordInput" type="text" maxlength="64" placeholder="ex: amanda222" autocomplete="off" required></label>
+          <label>Estado de residência<select id="stateInput" required></select></label>
+          <div class="identity-note">
+            <b>Importante:</b> o estado escolhido define quais candidaturas estaduais aparecerão nesta urna. O mesmo @Discord só pode registrar um voto por eleição.
+          </div>
+          <button class="primary-btn" type="submit">Ir para a urna</button>
+        </form>
+      </section>
+
+      <section id="screenBallot" class="screen" hidden>
+        <div class="ballot-top panel">
+          <div>
+            <div class="hero-kicker">Urna oficial</div>
+            <h2 id="ballotElectionTitle">—</h2>
+            <p id="ballotVoterLine">—</p>
+          </div>
+          <div class="ballot-progress-wrap">
+            <div id="ballotStepLabel" class="progress-label">—</div>
+            <div class="progress-track"><div id="ballotProgress" class="progress-fill"></div></div>
+          </div>
+        </div>
+        <div id="ballotRaceCard" class="panel ballot-card"></div>
+        <div class="ballot-nav">
+          <button id="ballotBackBtn" class="secondary-btn">Voltar</button>
+          <button id="ballotNextBtn" class="primary-btn">Continuar</button>
+        </div>
+      </section>
+
+      <section id="screenReview" class="screen panel review-panel" hidden>
+        <div class="section-heading">
+          <div><span>Confirmação</span><h2>Revise seu voto</h2></div>
+          <button id="editBallotBtn" class="link-btn">Editar escolhas</button>
+        </div>
+        <p class="section-copy">Depois de confirmar, o voto será computado e não poderá ser alterado pelo eleitor.</p>
+        <div id="reviewIdentity" class="review-identity"></div>
+        <div id="reviewChoices" class="review-list"></div>
+        <label class="confirm-check"><input id="confirmVoteCheck" type="checkbox"> Confirmo que revisei as escolhas acima e desejo registrar este voto.</label>
+        <button id="submitVoteBtn" class="confirm-vote-btn" disabled>CONFIRMAR E COMPUTAR VOTO</button>
+        <div id="submitError" class="error-box" hidden></div>
+      </section>
+
+      <section id="screenReceipt" class="screen panel receipt-panel" hidden>
+        <div class="receipt-header">
+          <div class="receipt-seal">EC</div>
+          <div><div class="hero-kicker">Boletim de votação</div><h2>Voto computado</h2></div>
+        </div>
+        <p class="receipt-thanks">Obrigado por participar da eleição.</p>
+        <div id="receiptMeta" class="receipt-meta"></div>
+        <div id="receiptChoices" class="review-list"></div>
+        <div class="receipt-footer">Este boletim confirma as escolhas registradas nesta sessão. Guarde o código para referência em eventual auditoria.</div>
+        <div class="receipt-actions no-print">
+          <button id="printReceiptBtn" class="secondary-btn">Imprimir / salvar PDF</button>
+          <button id="finishReceiptBtn" class="primary-btn">Encerrar</button>
+        </div>
+      </section>
+    </section>
+
+    <section id="adminApp" class="admin-shell" hidden>
+      <div class="admin-header panel">
+        <div><div class="hero-kicker">Administração</div><h2>Painel da urna eleitoral</h2></div>
+        <div class="admin-session"><span class="secure-session-dot"></span><span id="adminSessionLabel">Administrador autenticado</span><button id="adminLogoutBtn" class="secondary-btn small">Sair</button></div>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-admin-tab="elections">Eleições</button>
+        <button class="admin-tab" data-admin-tab="editor">Configuração</button>
+        <button class="admin-tab" data-admin-tab="results">Resultados</button>
+        <button class="admin-tab" data-admin-tab="audit">Auditoria</button>
+      </div>
+
+      <section id="adminTab-elections" class="admin-tab-page">
+        <div class="panel">
+          <div class="panel-title-row">
+            <div><span class="eyebrow-dark">Arquivo eleitoral</span><h3>Eleições cadastradas</h3></div>
+            <button id="createElectionBtn" class="primary-btn small">+ Nova urna</button>
+          </div>
+          <div id="electionCards" class="election-card-grid"></div>
+        </div>
+      </section>
+
+      <section id="adminTab-editor" class="admin-tab-page" hidden>
+        <div class="panel" id="editorEmptyState">
+          <div class="empty-state">Selecione uma eleição existente ou crie uma nova urna para começar.</div>
+        </div>
+        <div id="editorWorkspace" hidden>
+          <div class="editor-grid">
+            <aside class="panel editor-sidebar">
+              <div class="subhead">Eleição</div>
+              <div id="editorElectionSummary" class="editor-election-summary"></div>
+              <hr>
+              <div class="subhead">Estados</div>
+              <input id="stateSearchInput" type="text" placeholder="Buscar estado..." class="search-input">
+              <div id="editorStateList" class="state-config-list"></div>
+            </aside>
+            <div class="editor-main">
+              <div class="panel">
+                <div class="panel-title-row"><div><span class="eyebrow-dark">Dados gerais</span><h3>Configuração da eleição</h3></div><span id="editorStatusBadge" class="status-badge">RASCUNHO</span></div>
+                <div class="form-grid two">
+                  <label>Ano<input id="editorYear" type="number" min="1900" max="2200"></label>
+                  <label>Nome da eleição<input id="editorName" type="text" maxlength="100"></label>
+                  <label class="full">Descrição<textarea id="editorDescription" rows="3" maxlength="500"></textarea></label>
+                </div>
+              </div>
+
+              <div class="panel">
+                <div class="panel-title-row"><div><span class="eyebrow-dark">Disputa nacional</span><h3>Presidência</h3></div><button id="addPresidentCandidateBtn" class="secondary-btn small">+ Candidato</button></div>
+                <div id="presidentCandidateEditor" class="candidate-editor"></div>
+              </div>
+
+              <div class="panel" id="stateRaceEditor">
+                <div class="panel-title-row">
+                  <div><span class="eyebrow-dark">Configuração estadual</span><h3 id="stateEditorTitle">Selecione um estado</h3></div>
+                  <label class="toggle-line"><input id="stateEnabledToggle" type="checkbox"> Estado habilitado</label>
+                </div>
+                <div id="stateEditorBody" hidden>
+                  <div class="race-editor-block">
+                    <div class="race-editor-head"><div><div class="subhead">Governador</div><p>Se não houver candidatos, esta etapa será pulada.</p></div><button id="addGovernorCandidateBtn" class="secondary-btn small">+ Candidato</button></div>
+                    <div id="governorCandidateEditor" class="candidate-editor"></div>
+                  </div>
+                  <hr>
+                  <div class="race-editor-block">
+                    <div class="race-editor-head"><div><div class="subhead">Congressista</div><p>O eleitor poderá escolher até o número de assentos configurado.</p></div><button id="addCongressCandidateBtn" class="secondary-btn small">+ Candidato</button></div>
+                    <label class="seat-input">Assentos em disputa <input id="congressSeatsInput" type="number" min="1" max="20" value="1"></label>
+                    <div id="congressCandidateEditor" class="candidate-editor"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="editor-savebar panel">
+                <div><b>Alterações locais</b><span>Salve para publicar a configuração no Firebase.</span></div>
+                <button id="saveElectionBtn" class="primary-btn">Salvar eleição</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="adminTab-results" class="admin-tab-page" hidden>
+        <div class="panel">
+          <div class="panel-title-row">
+            <div><span class="eyebrow-dark">Apuração interna</span><h3>Resultados</h3></div>
+            <select id="resultsElectionSelect" class="compact-select"></select>
+          </div>
+          <div id="resultsSummaryCards" class="summary-card-grid"></div>
+          <div class="results-section"><h4>Presidência — nacional</h4><div id="nationalPresidentResults"></div></div>
+          <div class="results-section"><h4>Congressistas — agregado nacional por partido</h4><div id="nationalCongressResults"></div></div>
+          <div class="state-results-toolbar"><h4>Resultados por estado</h4><select id="resultsStateSelect" class="compact-select"></select></div>
+          <div id="stateResults"></div>
+        </div>
+      </section>
+
+      <section id="adminTab-audit" class="admin-tab-page" hidden>
+        <div class="panel">
+          <div class="panel-title-row">
+            <div><span class="eyebrow-dark">Auditoria</span><h3>Registro individual de votos</h3></div>
+            <div class="audit-actions"><select id="auditElectionSelect" class="compact-select"></select><button id="exportCsvBtn" class="secondary-btn small">Exportar CSV</button></div>
+          </div>
+          <div class="audit-toolbar"><input id="auditSearchInput" class="search-input" type="text" placeholder="Buscar nome, Discord, estado..."><span id="auditCountLabel">0 registros</span></div>
+          <div class="table-wrap"><table class="audit-table"><thead><tr><th>Eleitor</th><th>Discord</th><th>Estado</th><th>Presidente</th><th>Governador</th><th>Congressista(s)</th><th>Horário</th><th>Status</th><th></th></tr></thead><tbody id="auditTableBody"></tbody></table></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="adminLoginModal" class="modal-backdrop" hidden>
+    <div class="modal-card">
+      <button id="adminLoginClose" class="modal-close">×</button>
+      <div class="hero-kicker">Acesso restrito</div>
+      <h2>Entrar como administrador</h2>
+      <p>Digite a senha administrativa desta urna.</p>
+      <form id="adminLoginForm">
+        <label>Senha<input id="adminPasswordInput" type="password" autocomplete="current-password" required></label>
+        <button class="primary-btn" type="submit">Entrar</button>
+      </form>
+      <div id="adminLoginError" class="error-box" hidden></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
