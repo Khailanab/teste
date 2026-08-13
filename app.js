@@ -10,18 +10,19 @@
    5) Publique database.rules.json no Realtime Database, substituindo ADMIN_UID_AQUI.
    ============================================================================ */
 
-const FIREBASE_CONFIG = {
-  apiKey: "COLE_AQUI",
-  authDomain: "COLE_AQUI",
-  databaseURL: "COLE_AQUI",
-  projectId: "COLE_AQUI",
-  storageBucket: "COLE_AQUI",
-  messagingSenderId: "COLE_AQUI",
-  appId: "COLE_AQUI"
+const firebaseConfig = {
+    apiKey: "AIzaSyAPfsNMvBurQR3zWqQq21uNMKWb0FRJg1k",
+    authDomain: "ballotbox-641e4.firebaseapp.com",
+    projectId: "ballotbox-641e4",
+    storageBucket: "ballotbox-641e4.firebasestorage.app",
+    messagingSenderId: "376974694128",
+    appId: "1:376974694128:web:7325698bffb777fa8e1435",
+    measurementId: "G-VYJW7EFG4Y"
+
 };
 
-const ADMIN_EMAIL = "admin@exemplo.com";
-const ADMIN_UID = "COLE_UID_DO_ADMIN_AQUI";
+const ADMIN_EMAIL = "khailanabdala15@gmail.com";
+const ADMIN_UID = "PORRADESENHA@@USA";
 
 const STATES = [
   ["AL","Alabama"],["AK","Alasca"],["AZ","Arizona"],["AR","Arkansas"],["CA","Califórnia"],
