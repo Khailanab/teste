@@ -18,7 +18,6 @@ const firebaseConfig = {
     messagingSenderId: "376974694128",
     appId: "1:376974694128:web:7325698bffb777fa8e1435",
     measurementId: "G-VYJW7EFG4Y"
-
 };
 
 const ADMIN_EMAIL = "khailanabdala15@gmail.com";
@@ -40,7 +39,7 @@ const STATE_BY_ABBR = Object.fromEntries(STATES.map(s=>[s.a,s]));
 
 let db = null;
 let auth = null;
-let firebaseReady = false;
+let firebaseReady = true;
 let publicElections = {};
 let currentElection = null;
 let publicListener = null;
