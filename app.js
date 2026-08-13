@@ -11,13 +11,13 @@
    ============================================================================ */
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAPfsNMvBurQR3zWqQq21uNMKWb0FRJg1k",
-    authDomain: "ballotbox-641e4.firebaseapp.com",
-    projectId: "ballotbox-641e4",
-    storageBucket: "ballotbox-641e4.firebasestorage.app",
-    messagingSenderId: "376974694128",
-    appId: "1:376974694128:web:7325698bffb777fa8e1435",
-    measurementId: "G-VYJW7EFG4Y"
+  apiKey: "AIzaSyAPfsNMvBurQR3zWqQq21uNMKWb0FRJg1k",
+  authDomain: "ballotbox-641e4.firebaseapp.com",
+  projectId: "ballotbox-641e4",
+  storageBucket: "ballotbox-641e4.firebasestorage.app",
+  messagingSenderId: "376974694128",
+  appId: "1:376974694128:web:7325698bffb777fa8e1435",
+  measurementId: "G-VYJW7EFG4Y"
 };
 
 const ADMIN_EMAIL = "khailanabdala15@gmail.com";
