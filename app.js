@@ -13,6 +13,7 @@
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAPfsNMvBurQR3zWqQq21uNMKWb0FRJg1k",
   authDomain: "ballotbox-641e4.firebaseapp.com",
+  databaseURL: "https://ballotbox-641e4-default-rtdb.firebaseio.com",
   projectId: "ballotbox-641e4",
   storageBucket: "ballotbox-641e4.firebasestorage.app",
   messagingSenderId: "376974694128",
@@ -136,8 +137,10 @@ function setAdminVisible(visible){
   $("adminToggle").textContent=visible?"Painel administrativo":"Entrar como admin";
 }
 function isConfigured(){
-  return FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "COLE_AQUI" &&
-         FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL !== "https://ballotbox-641e4-default-rtdb.firebaseio.com/";
+  return FIREBASE_CONFIG.apiKey &&
+         FIREBASE_CONFIG.apiKey !== "COLE_AQUI" &&
+         FIREBASE_CONFIG.databaseURL &&
+         FIREBASE_CONFIG.databaseURL !== "COLE_AQUI";
 }
 
 /* ============================== FIREBASE =================================== */
