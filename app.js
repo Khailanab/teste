@@ -11,17 +11,18 @@
    ============================================================================ */
 
 const FIREBASE_CONFIG = {
-  apiKey: "COLE_AQUI",
-  authDomain: "COLE_AQUI",
-  databaseURL: "COLE_AQUI",
-  projectId: "COLE_AQUI",
-  storageBucket: "COLE_AQUI",
-  messagingSenderId: "COLE_AQUI",
-  appId: "COLE_AQUI"
+  apiKey: "AIzaSyAPfsNMvBurQR3zWqQq21uNMKWb0FRJg1k",
+  authDomain: "ballotbox-641e4.firebaseapp.com",
+  databaseURL: "https://ballotbox-641e4-default-rtdb.firebaseio.com",
+  projectId: "ballotbox-641e4",
+  storageBucket: "ballotbox-641e4.firebasestorage.app",
+  messagingSenderId: "376974694128",
+  appId: "1:376974694128:web:7325698bffb777fa8e1435",
+  measurementId: "G-VYJW7EFG4Y"
 };
 
-const ADMIN_EMAIL = "admin@exemplo.com";
-const ADMIN_UID = "COLE_UID_DO_ADMIN_AQUI";
+const ADMIN_EMAIL = "khailanabdala15@gmail.com";
+const ADMIN_UID = "0s0BWZQW6cXy3OFQJbQGY59CW4J3";
 
 const STATES = [
   ["AL","Alabama"],["AK","Alasca"],["AZ","Arizona"],["AR","Arkansas"],["CA","Califórnia"],
