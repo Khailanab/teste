@@ -47,7 +47,7 @@ const CONGRESS_PARTY_BY_ID = Object.fromEntries(CONGRESS_PARTIES.map(p=>[p.id,p]
 
 let db = null;
 let auth = null;
-let firebaseReady = false;
+let firebaseReady = true;
 let publicElections = {};
 let currentElection = null;
 let publicListener = null;
