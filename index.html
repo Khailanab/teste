@@ -88,7 +88,7 @@
           <label>@ do Discord<input id="discordInput" type="text" maxlength="64" placeholder="ex: amanda222" autocomplete="off" required></label>
           <label>Estado de residência<select id="stateInput" required></select></label>
           <div class="identity-note">
-            <b>Importante:</b> o estado escolhido define quais candidaturas estaduais aparecerão nesta urna. O mesmo IP e @Discord só podem registrar um voto por eleição.
+            <b>Importante:</b> o estado escolhido define quais candidaturas estaduais aparecerão nesta urna. O mesmo @Discord só pode registrar um voto por eleição.
           </div>
           <button class="primary-btn" type="submit">Ir para a urna</button>
         </form>
@@ -206,9 +206,31 @@
                   </div>
                   <hr>
                   <div class="race-editor-block">
-                    <div class="race-editor-head"><div><div class="subhead">Congressista</div><p>O eleitor poderá escolher até o número de assentos configurado.</p></div><button id="addCongressCandidateBtn" class="secondary-btn small">+ Candidato</button></div>
+                    <div class="race-editor-head">
+                      <div>
+                        <div class="subhead">Congressistas</div>
+                        <p>Votação proporcional por partido. As opções são padronizadas em todos os estados.</p>
+                      </div>
+                    </div>
                     <label class="seat-input">Assentos em disputa <input id="congressSeatsInput" type="number" min="1" max="20" value="1"></label>
-                    <div id="congressCandidateEditor" class="candidate-editor"></div>
+
+                    <div id="congressPartyModeBlock" class="fixed-party-grid">
+                      <div class="fixed-party-card dem">
+                        <span class="fixed-party-mark">D</span>
+                        <div><b>Partido Democrata</b><small>Opção fixa · DEM</small></div>
+                      </div>
+                      <div class="fixed-party-card rep">
+                        <span class="fixed-party-mark">R</span>
+                        <div><b>Partido Republicano</b><small>Opção fixa · REP</small></div>
+                      </div>
+                      <div class="fixed-party-note">O eleitor escolhe um partido. As cadeiras são distribuídas proporcionalmente aos votos recebidos no estado.</div>
+                    </div>
+
+                    <div id="congressLegacyModeBlock" hidden>
+                      <div class="legacy-note">Esta eleição usa o modelo congressual antigo e foi mantida para compatibilidade/auditoria.</div>
+                      <button id="addCongressCandidateBtn" class="secondary-btn small">+ Candidato</button>
+                      <div id="congressCandidateEditor" class="candidate-editor"></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -230,7 +252,7 @@
           </div>
           <div id="resultsSummaryCards" class="summary-card-grid"></div>
           <div class="results-section"><h4>Presidência — nacional</h4><div id="nationalPresidentResults"></div></div>
-          <div class="results-section"><h4>Congressistas — agregado nacional por partido</h4><div id="nationalCongressResults"></div></div>
+          <div class="results-section"><h4>Congresso — voto partidário nacional</h4><div id="nationalCongressResults"></div></div>
           <div class="state-results-toolbar"><h4>Resultados por estado</h4><select id="resultsStateSelect" class="compact-select"></select></div>
           <div id="stateResults"></div>
         </div>
@@ -243,7 +265,7 @@
             <div class="audit-actions"><select id="auditElectionSelect" class="compact-select"></select><button id="exportCsvBtn" class="secondary-btn small">Exportar CSV</button></div>
           </div>
           <div class="audit-toolbar"><input id="auditSearchInput" class="search-input" type="text" placeholder="Buscar nome, Discord, estado..."><span id="auditCountLabel">0 registros</span></div>
-          <div class="table-wrap"><table class="audit-table"><thead><tr><th>Eleitor</th><th>Discord</th><th>Estado</th><th>Presidente</th><th>Governador</th><th>Congressista(s)</th><th>Horário</th><th>Status</th><th></th></tr></thead><tbody id="auditTableBody"></tbody></table></div>
+          <div class="table-wrap"><table class="audit-table"><thead><tr><th>Eleitor</th><th>Discord</th><th>Estado</th><th>Presidente</th><th>Governador</th><th>Congresso</th><th>Horário</th><th>Status</th><th></th></tr></thead><tbody id="auditTableBody"></tbody></table></div>
         </div>
       </section>
     </section>

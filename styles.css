@@ -331,3 +331,39 @@ h2,h3,h4{margin:0}.hero-panel h2,.section-heading h2,.admin-header h2,.modal-car
 .access-card-body p{margin:8px 0 17px}
 .wrap{padding:18px 12px 45px}.masthead{padding:17px 15px}.brand-title{font-size:31px}.masthead-right{align-items:flex-start;text-align:left}.home-meta-grid,.identity-grid,.form-grid,.candidate-grid,.receipt-meta{grid-template-columns:1fr}.identity-note,.identity-grid .primary-btn,.form-grid.two .full{grid-column:auto}.ballot-top{align-items:flex-start;flex-direction:column}.ballot-progress-wrap{width:100%}.progress-label{text-align:left}.review-row{grid-template-columns:1fr}.editor-savebar,.admin-header{align-items:flex-start;flex-direction:column}.candidate-edit-row{grid-template-columns:1fr 1fr 48px}.candidate-edit-row input:nth-child(4){grid-column:1/3}.candidate-delete{grid-column:3}.summary-card-grid{grid-template-columns:1fr 1fr}.result-row{grid-template-columns:1fr 70px}.result-bar-track{grid-column:1/-1;grid-row:2}.result-votes{display:none}.admin-tabs{overflow:auto}.hero-panel{padding:40px 20px}.home-year{font-size:48px}}
 @media print{body{background:#fff}.masthead,.config-warning,.no-print,#publicStatusBar{display:none!important}.wrap{padding:0}.receipt-panel{box-shadow:none;border:none;max-width:none}.receipt-actions{display:none!important}}
+
+
+/* ========================================================================== */
+/* CONGRESSO — REPRESENTAÇÃO PROPORCIONAL POR PARTIDO                         */
+/* ========================================================================== */
+.fixed-party-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px;
+}
+.fixed-party-card{
+  min-height:76px;border:1px solid var(--line);border-radius:var(--radius-md);background:#fff;
+  display:flex;align-items:center;gap:12px;padding:12px 14px;box-shadow:var(--shadow-sm);
+}
+.fixed-party-card.dem{border-left:5px solid #2563EB;}
+.fixed-party-card.rep{border-left:5px solid #DC2626;}
+.fixed-party-mark{
+  width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;
+  color:#fff;font-family:var(--font-display);font-size:22px;font-weight:900;
+}
+.fixed-party-card.dem .fixed-party-mark{background:#2563EB;}
+.fixed-party-card.rep .fixed-party-mark{background:#DC2626;}
+.fixed-party-card b{display:block;font-size:13px;color:var(--text-hi);}
+.fixed-party-card small{display:block;font-size:10px;color:var(--text-dim);font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-top:3px;}
+.fixed-party-note,.legacy-note{
+  grid-column:1/-1;background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:10px 12px;font-size:11px;line-height:1.5;color:var(--text-mid);
+}
+.legacy-note{margin:12px 0;}
+.result-seats{
+  min-width:72px;text-align:right;font-size:11px;font-weight:900;color:var(--navy-head);
+  text-transform:uppercase;letter-spacing:.25px;
+}
+@media (max-width:680px){
+  .fixed-party-grid{grid-template-columns:1fr;}
+  .fixed-party-note{grid-column:1;}
+  .result-seats{min-width:58px;font-size:10px;}
+}

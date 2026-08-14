@@ -11,18 +11,17 @@
    ============================================================================ */
 
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAPfsNMvBurQR3zWqQq21uNMKWb0FRJg1k",
-  authDomain: "ballotbox-641e4.firebaseapp.com",
-  databaseURL: "https://ballotbox-641e4-default-rtdb.firebaseio.com",
-  projectId: "ballotbox-641e4",
-  storageBucket: "ballotbox-641e4.firebasestorage.app",
-  messagingSenderId: "376974694128",
-  appId: "1:376974694128:web:7325698bffb777fa8e1435",
-  measurementId: "G-VYJW7EFG4Y"
+  apiKey: "COLE_AQUI",
+  authDomain: "COLE_AQUI",
+  databaseURL: "COLE_AQUI",
+  projectId: "COLE_AQUI",
+  storageBucket: "COLE_AQUI",
+  messagingSenderId: "COLE_AQUI",
+  appId: "COLE_AQUI"
 };
 
-const ADMIN_EMAIL = "khailanabdala15@gmail.com";
-const ADMIN_UID = "0s0BWZQW6cXy3OFQJbQGY59CW4J3";
+const ADMIN_EMAIL = "admin@exemplo.com";
+const ADMIN_UID = "COLE_UID_DO_ADMIN_AQUI";
 
 const STATES = [
   ["AL","Alabama"],["AK","Alasca"],["AZ","Arizona"],["AR","Arkansas"],["CA","Califórnia"],
@@ -38,9 +37,16 @@ const STATES = [
 ].map(([a,n])=>({a,n}));
 const STATE_BY_ABBR = Object.fromEntries(STATES.map(s=>[s.a,s]));
 
+const CONGRESS_PARTIES = [
+  {id:"dem", name:"Partido Democrata", party:"DEM", color:"#2563EB", photo:"", order:1},
+  {id:"rep", name:"Partido Republicano", party:"REP", color:"#DC2626", photo:"", order:2}
+];
+const CONGRESS_PARTY_BY_ID = Object.fromEntries(CONGRESS_PARTIES.map(p=>[p.id,p]));
+
+
 let db = null;
 let auth = null;
-let firebaseReady = true;
+let firebaseReady = false;
 let publicElections = {};
 let currentElection = null;
 let publicListener = null;
@@ -48,7 +54,7 @@ let publicListener = null;
 let voter = null;
 let ballotSteps = [];
 let ballotStepIndex = 0;
-let selections = { president:null, governor:null, congress:[] };
+let selections = { president:null, governor:null, congress:null };
 let lastReceipt = null;
 
 let adminUser = null;
@@ -77,17 +83,26 @@ function makeCandidate(name="Novo candidato", party="IND", color="#64748B"){
 }
 function defaultElection(){
   const year = new Date().getFullYear();
+  const states = {};
+  STATES.forEach(s=>{
+    states[s.a] = {
+      enabled:true,
+      governor:{candidates:{}},
+      congress:{seats:1,candidates:{}}
+    };
+  });
   return {
     id:makeId("election"), year, name:`Eleição Geral de ${year}`, description:"",
     status:"draft", createdAt:nowIso(), updatedAt:nowIso(),
-    president:{ candidates:{} }, states:{}
+    congressMode:"party_pr",
+    president:{ candidates:{} }, states
   };
 }
 function ensureStateConfig(election, abbr){
   election.states = election.states || {};
   if(!election.states[abbr]){
     election.states[abbr] = {
-      enabled:false,
+      enabled:election.congressMode==="party_pr",
       governor:{candidates:{}},
       congress:{seats:1,candidates:{}}
     };
@@ -137,10 +152,8 @@ function setAdminVisible(visible){
   $("adminToggle").textContent=visible?"Painel administrativo":"Entrar como admin";
 }
 function isConfigured(){
-  return FIREBASE_CONFIG.apiKey &&
-         FIREBASE_CONFIG.apiKey !== "COLE_AQUI" &&
-         FIREBASE_CONFIG.databaseURL &&
-         FIREBASE_CONFIG.databaseURL !== "COLE_AQUI";
+  return FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "COLE_AQUI" &&
+         FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL !== "COLE_AQUI";
 }
 
 /* ============================== FIREBASE =================================== */
@@ -212,7 +225,7 @@ function renderHome(){
   setScreen("screenHome");
 }
 function resetVoterSession(goHome=true){
-  voter=null; ballotSteps=[]; ballotStepIndex=0; selections={president:null,governor:null,congress:[]}; lastReceipt=null;
+  voter=null; ballotSteps=[]; ballotStepIndex=0; selections={president:null,governor:null,congress:null}; lastReceipt=null;
   $("identityForm")?.reset();
   if(goHome){ if(currentElection) renderHome(); else renderClosed("Não há nenhuma eleição aberta neste momento."); }
 }
@@ -230,10 +243,23 @@ function buildBallotSteps(){
   if(pres.length) steps.push({key:"president",title:"Presidência",subtitle:"Disputa nacional",mode:"single",candidates:pres});
   const gov=candidateList(st.governor?.candidates);
   if(gov.length) steps.push({key:"governor",title:`Governador de ${stateName(voter.state)}`,subtitle:"Disputa estadual",mode:"single",candidates:gov});
-  const con=candidateList(st.congress?.candidates);
-  if(con.length){
-    const seats=Math.min(con.length,Math.max(1,parseInt(st.congress?.seats,10)||1));
-    steps.push({key:"congress",title:`Congressista · ${stateName(voter.state)}`,subtitle:`${seats} ${seats===1?'assento em disputa':'assentos em disputa'}`,mode:"multi",limit:seats,candidates:con});
+
+  const seats=Math.max(1,parseInt(st.congress?.seats,10)||1);
+  if(currentElection.congressMode==="party_pr"){
+    steps.push({
+      key:"congress",
+      title:`Congressistas · ${stateName(voter.state)}`,
+      subtitle:`Representação proporcional · ${seats} ${seats===1?'assento':'assentos'} em disputa`,
+      mode:"single",
+      candidates:CONGRESS_PARTIES,
+      isPartyVote:true
+    });
+  }else{
+    const con=candidateList(st.congress?.candidates);
+    if(con.length){
+      const legacySeats=Math.min(con.length,seats);
+      steps.push({key:"congress",title:`Congressista · ${stateName(voter.state)}`,subtitle:`${legacySeats} ${legacySeats===1?'assento em disputa':'assentos em disputa'}`,mode:"multi",limit:legacySeats,candidates:con});
+    }
   }
   ballotSteps=steps; ballotStepIndex=0;
 }
@@ -249,15 +275,11 @@ function renderBallot(){
   const selected=step.mode==="multi"?selections[step.key]:(selections[step.key]?[selections[step.key]]:[]);
   $("ballotRaceCard").innerHTML=`
     <div class="race-banner"><div class="race-type">${escapeHtml(step.subtitle)}</div><h3>${escapeHtml(step.title)}</h3>
-    <p>${step.mode==="multi"?`Selecione até ${step.limit} candidato(s).`:'Selecione um candidato.'}</p></div>
-    <div class="candidate-grid">${step.candidates.map((c,i)=>`
-      <label class="candidate-option ${selected.includes(c.id)?'selected':''}" data-candidate-id="${c.id}" style="--candidate-color:${escapeHtml(c.color||'#64748B')}">
+    <p>${step.isPartyVote?'Escolha o partido que receberá seu voto para a representação congressual.':(step.mode==="multi"?`Selecione até ${step.limit} candidato(s).`:'Selecione um candidato.')}</p></div>
+    <div class="candidate-grid">${step.candidates.map(c=>`
+      <label class="candidate-option ${selected.includes(c.id)?'selected':''}" data-candidate-id="${c.id}">
         <input type="${step.mode==='multi'?'checkbox':'radio'}" name="raceChoice" value="${c.id}" ${selected.includes(c.id)?'checked':''}>
-        <span class="candidate-stripe"></span>
-        <span class="candidate-number">${String(i+1).padStart(2,'0')}</span>
-        ${avatarHtml(c)}
-        <div class="candidate-copy"><div class="candidate-name">${escapeHtml(c.name)}</div><div class="candidate-party">${escapeHtml(c.party||'Sem partido')}</div><div class="candidate-action-label">${selected.includes(c.id)?'SELECIONADO':'SELECIONAR CANDIDATO'}</div></div>
-        <div class="candidate-check">✓</div>
+        ${avatarHtml(c)}<div><div class="candidate-name">${escapeHtml(c.name)}</div><div class="candidate-party">${escapeHtml(c.party||'Sem partido')}</div></div><div class="candidate-check">✓</div>
       </label>`).join("")}</div>
     ${step.mode==='multi'?`<div class="candidate-limit" id="candidateLimitText">Selecionados: ${selected.length} de ${step.limit}</div>`:''}`;
   document.querySelectorAll(".candidate-option").forEach(label=>label.addEventListener("click",ev=>{
@@ -285,6 +307,7 @@ function currentStepHasSelection(){
 }
 function candidateFor(raceKey,id,state=voter?.state,election=currentElection){
   if(!id||!election) return null;
+  if(raceKey==="congress" && election.congressMode==="party_pr") return CONGRESS_PARTY_BY_ID[id] || null;
   let map={};
   if(raceKey==="president") map=election.president?.candidates;
   else if(raceKey==="governor") map=election.states?.[state]?.governor?.candidates;
@@ -296,7 +319,13 @@ function renderReview(){
   const rows=[];
   if(selections.president){const c=candidateFor("president",selections.president); rows.push(reviewRow("Presidente",c));}
   if(selections.governor){const c=candidateFor("governor",selections.governor); rows.push(reviewRow("Governador",c));}
-  if(selections.congress?.length){const cs=selections.congress.map(id=>candidateFor("congress",id)).filter(Boolean); rows.push(reviewRowMulti("Congressista(s)",cs));}
+  if(currentElection.congressMode==="party_pr" && selections.congress){
+    const c=candidateFor("congress",selections.congress);
+    if(c) rows.push(reviewRow("Voto congressual",c));
+  }else if(Array.isArray(selections.congress) && selections.congress.length){
+    const cs=selections.congress.map(id=>candidateFor("congress",id)).filter(Boolean);
+    rows.push(reviewRowMulti("Congressista(s)",cs));
+  }
   $("reviewChoices").innerHTML=rows.join("");
   $("confirmVoteCheck").checked=false; $("submitVoteBtn").disabled=true; $("submitError").hidden=true;
   setScreen("screenReview");
@@ -316,14 +345,19 @@ async function submitVote(){
   const key=await discordKey(norm);
   const voteId=makeId("ballot");
   const receiptCode=`BALLOT-${Math.random().toString(36).slice(2,10).toUpperCase()}`;
-  const congressMap={}; (selections.congress||[]).forEach(id=>congressMap[id]=true);
+  const congressMap={};
+  if(Array.isArray(selections.congress)) selections.congress.forEach(id=>congressMap[id]=true);
   const ballot={
     voteId, receiptCode, submittedAt:firebase.database.ServerValue.TIMESTAMP, status:"valid",
     voter:{firstName:voter.firstName,lastName:voter.lastName,discord:voter.discordOriginal,discordNorm:norm,state:voter.state},
     choices:{president:selections.president}
   };
   if(selections.governor) ballot.choices.governor=selections.governor;
-  if(Object.keys(congressMap).length) ballot.choices.congress=congressMap;
+  if(currentElection.congressMode==="party_pr" && selections.congress){
+    ballot.choices.congress=selections.congress;
+  }else if(Object.keys(congressMap).length){
+    ballot.choices.congress=congressMap;
+  }
   try{
     await db.ref(`private/elections/${currentElection.id}/ballots/${key}`).set(ballot);
     lastReceipt={...clone(ballot),submittedAt:Date.now()};
@@ -348,7 +382,13 @@ function renderReceipt(){
   const rows=[];
   const p=candidateFor("president",selections.president); if(p) rows.push(reviewRow("Presidente",p));
   const g=candidateFor("governor",selections.governor); if(g) rows.push(reviewRow("Governador",g));
-  const cs=(selections.congress||[]).map(id=>candidateFor("congress",id)).filter(Boolean); if(cs.length) rows.push(reviewRowMulti("Congressista(s)",cs));
+  if(currentElection.congressMode==="party_pr" && selections.congress){
+    const c=candidateFor("congress",selections.congress);
+    if(c) rows.push(reviewRow("Voto congressual",c));
+  }else{
+    const cs=(Array.isArray(selections.congress)?selections.congress:[]).map(id=>candidateFor("congress",id)).filter(Boolean);
+    if(cs.length) rows.push(reviewRowMulti("Congressista(s)",cs));
+  }
   $("receiptChoices").innerHTML=rows.join("");
   setScreen("screenReceipt");
 }
@@ -457,7 +497,11 @@ function renderStateEditor(){
   $("stateEnabledToggle").checked=!!cfg.enabled;$("stateEditorBody").hidden=!cfg.enabled;
   $("congressSeatsInput").value=cfg.congress.seats||1;
   renderCandidateEditor("governorCandidateEditor",cfg.governor.candidates,"governor");
-  renderCandidateEditor("congressCandidateEditor",cfg.congress.candidates,"congress");
+
+  const isPartyPr=editingElection.congressMode==="party_pr";
+  $("congressPartyModeBlock").hidden=!isPartyPr;
+  $("congressLegacyModeBlock").hidden=isPartyPr;
+  if(!isPartyPr) renderCandidateEditor("congressCandidateEditor",cfg.congress.candidates,"congress");
 }
 function syncStateEditor(){
   if(!editingElection)return;
@@ -507,6 +551,51 @@ async function saveElection(){
 }
 
 /* ============================== RESULTS ==================================== */
+function allocateCongressSeats(counts,seats){
+  const ids=CONGRESS_PARTIES.map(p=>p.id);
+  const safeSeats=Math.max(1,parseInt(seats,10)||1);
+  const total=ids.reduce((sum,id)=>sum+(counts[id]||0),0);
+  const allocated=Object.fromEntries(ids.map(id=>[id,0]));
+  if(total<=0) return allocated;
+
+  const quota=total/safeSeats;
+  const remainders=[];
+  let used=0;
+  ids.forEach(id=>{
+    const exact=(counts[id]||0)/quota;
+    const base=Math.floor(exact);
+    allocated[id]=base; used+=base;
+    remainders.push({id, remainder:exact-base, votes:counts[id]||0});
+  });
+  remainders.sort((a,b)=>b.remainder-a.remainder || b.votes-a.votes || a.id.localeCompare(b.id));
+  for(let i=0; used<safeSeats; i++,used++){
+    allocated[remainders[i % remainders.length].id]++;
+  }
+  return allocated;
+}
+
+function congressChoiceIds(ballot,election){
+  const choice=ballot?.choices?.congress;
+  if(election?.congressMode==="party_pr") return typeof choice==="string" && CONGRESS_PARTY_BY_ID[choice] ? [choice] : [];
+  if(typeof choice==="string") return [choice];
+  return Object.keys(asObject(choice));
+}
+
+function congressPartyResultRows(counts,total,seatsByParty=null){
+  return CONGRESS_PARTIES.map(p=>{
+    const v=counts[p.id]||0;
+    const pct=total?100*v/total:0;
+    const seatText=seatsByParty ? `<div class="result-seats">${seatsByParty[p.id]||0} ${Number(seatsByParty[p.id]||0)===1?'cadeira':'cadeiras'}</div>` : "";
+    return `<div class="result-row">
+      <div class="result-name">${escapeHtml(p.name)}<small>${escapeHtml(p.party)}</small></div>
+      <div class="result-bar-track"><div class="result-bar" style="width:${pct}%;background:${escapeHtml(p.color)}"></div></div>
+      <div class="result-votes">${v.toLocaleString('pt-BR')} votos</div>
+      ${seatText}
+      <div class="result-pct">${pct.toFixed(1)}%</div>
+    </div>`;
+  }).join("");
+}
+
 function populateAdminElectionSelectors(){
   const list=electionList();const html=list.map(e=>`<option value="${e.id}">${escapeHtml(e.year)} — ${escapeHtml(e.name)}</option>`).join("");
   [$("resultsElectionSelect"),$("auditElectionSelect")].forEach(sel=>{if(!sel)return;const prev=sel.value;sel.innerHTML=html;if(list.some(e=>e.id===prev))sel.value=prev;});
@@ -534,10 +623,30 @@ function renderResults(election,ballotsObj){
     <div class="summary-card"><span>Último voto</span><b style="font-size:15px">${escapeHtml(fmtDate(Math.max(0,...all.map(b=>Number(b.submittedAt)||0))))}</b></div>`;
   const presCandidates=candidateList(election.president?.candidates);const presCounts=countSingle(ballots,"president",presCandidates.map(c=>c.id));
   $("nationalPresidentResults").innerHTML=resultRows(presCandidates,presCounts);
-  const partyCounts={};let congressVotes=0;
-  ballots.forEach(b=>Object.keys(asObject(b.choices?.congress)).forEach(cid=>{const c=candidateForElection(election,b.voter?.state,"congress",cid);const p=c?.party||"Outros";partyCounts[p]=(partyCounts[p]||0)+1;congressVotes++;}));
-  const partyCandidates=Object.entries(partyCounts).map(([party,votes],i)=>({id:party,name:party,party:"Agregado nacional",color:partyColor(party,i),votes}));
-  $("nationalCongressResults").innerHTML=partyCandidates.length?resultRows(partyCandidates,Object.fromEntries(partyCandidates.map(x=>[x.id,x.votes])),congressVotes):`<div class="empty-state" style="padding:18px">Nenhum voto para congressista.</div>`;
+  if(election.congressMode==="party_pr"){
+    const counts={dem:0,rep:0}; let congressVotes=0;
+    ballots.forEach(b=>{
+      const id=congressChoiceIds(b,election)[0];
+      if(id && counts[id]!==undefined){ counts[id]++; congressVotes++; }
+    });
+    const nationalSeats={dem:0,rep:0};
+    STATES.forEach(s=>{
+      if(!election.states?.[s.a]?.enabled) return;
+      const stateCounts={dem:0,rep:0};
+      ballots.filter(b=>b.voter?.state===s.a).forEach(b=>{
+        const id=congressChoiceIds(b,election)[0];
+        if(id && stateCounts[id]!==undefined) stateCounts[id]++;
+      });
+      const alloc=allocateCongressSeats(stateCounts,election.states?.[s.a]?.congress?.seats||1);
+      nationalSeats.dem+=alloc.dem||0; nationalSeats.rep+=alloc.rep||0;
+    });
+    $("nationalCongressResults").innerHTML=congressPartyResultRows(counts,congressVotes,nationalSeats);
+  }else{
+    const partyCounts={};let congressVotes=0;
+    ballots.forEach(b=>Object.keys(asObject(b.choices?.congress)).forEach(cid=>{const c=candidateForElection(election,b.voter?.state,"congress",cid);const p=c?.party||"Outros";partyCounts[p]=(partyCounts[p]||0)+1;congressVotes++;}));
+    const partyCandidates=Object.entries(partyCounts).map(([party,votes],i)=>({id:party,name:party,party:"Agregado nacional",color:partyColor(party,i),votes}));
+    $("nationalCongressResults").innerHTML=partyCandidates.length?resultRows(partyCandidates,Object.fromEntries(partyCandidates.map(x=>[x.id,x.votes])),congressVotes):`<div class="empty-state" style="padding:18px">Nenhum voto para congressista.</div>`;
+  }
   const enabled=STATES.filter(s=>election.states?.[s.a]?.enabled);$("resultsStateSelect").innerHTML=enabled.map(s=>`<option value="${s.a}">${escapeHtml(s.n)} (${s.a})</option>`).join("");
   if(enabled.length){if(!enabled.some(s=>s.a===$("resultsStateSelect").value))$("resultsStateSelect").value=enabled[0].a;renderStateResults(election,ballots,$("resultsStateSelect").value);}else $("stateResults").innerHTML=`<div class="empty-state">Nenhum estado habilitado.</div>`;
 }
@@ -545,10 +654,13 @@ function countSingle(ballots,key,candidateIds){const counts=Object.fromEntries(c
 function resultRows(candidates,counts,totalOverride=null){
   const total=totalOverride??Object.values(counts).reduce((a,b)=>a+b,0);
   if(!candidates.length)return`<div class="empty-state" style="padding:18px">Nenhum candidato configurado.</div>`;
-  return [...candidates].sort((a,b)=>(counts[b.id]||0)-(counts[a.id]||0)).map((c,i)=>{const v=counts[c.id]||0,p=total?100*v/total:0;return `<div class="result-row ${i===0&&v>0?'leader':''}"><div class="result-rank">${String(i+1).padStart(2,'0')}</div><div class="result-name">${escapeHtml(c.name)}<small>${escapeHtml(c.party||'')}</small></div><div class="result-bar-track"><div class="result-bar" style="width:${p}%;background:${escapeHtml(c.color||'#64748B')}"></div></div><div class="result-votes">${v.toLocaleString('pt-BR')} votos</div><div class="result-pct">${p.toFixed(1)}%</div></div>`}).join("");
+  return [...candidates].sort((a,b)=>(counts[b.id]||0)-(counts[a.id]||0)).map(c=>{const v=counts[c.id]||0,p=total?100*v/total:0;return `<div class="result-row"><div class="result-name">${escapeHtml(c.name)}<small>${escapeHtml(c.party||'')}</small></div><div class="result-bar-track"><div class="result-bar" style="width:${p}%;background:${escapeHtml(c.color||'#64748B')}"></div></div><div class="result-votes">${v.toLocaleString('pt-BR')} votos</div><div class="result-pct">${p.toFixed(1)}%</div></div>`}).join("");
 }
 function candidateForElection(election,state,race,id){
-  if(!id)return null;let map=race==="president"?election.president?.candidates:race==="governor"?election.states?.[state]?.governor?.candidates:election.states?.[state]?.congress?.candidates;return asObject(map)[id]||null;
+  if(!id)return null;
+  if(race==="congress" && election?.congressMode==="party_pr") return CONGRESS_PARTY_BY_ID[id]||null;
+  let map=race==="president"?election.president?.candidates:race==="governor"?election.states?.[state]?.governor?.candidates:election.states?.[state]?.congress?.candidates;
+  return asObject(map)[id]||null;
 }
 function partyColor(party,i){
   const p=String(party).toLowerCase();if(p.includes("rep"))return"#DC2626";if(p.includes("dem"))return"#2563EB";const colors=["#7C3AED","#D97706","#15803D","#475569","#0891B2"];return colors[i%colors.length];
@@ -558,7 +670,23 @@ function renderStateResults(election,ballots,abbr){
   const parts=[];
   const pc=candidateList(election.president?.candidates);parts.push(`<h5>Presidente</h5>${resultRows(pc,countSingle(stateBallots,"president",pc.map(c=>c.id)))}`);
   const gc=candidateList(cfg.governor?.candidates);if(gc.length)parts.push(`<h5>Governador</h5>${resultRows(gc,countSingle(stateBallots,"governor",gc.map(c=>c.id)))}`);
-  const cc=candidateList(cfg.congress?.candidates);if(cc.length){const counts=Object.fromEntries(cc.map(c=>[c.id,0]));let total=0;stateBallots.forEach(b=>Object.keys(asObject(b.choices?.congress)).forEach(id=>{if(counts[id]!==undefined){counts[id]++;total++;}}));parts.push(`<h5>Congressista(s) · ${cfg.congress?.seats||1} assento(s)</h5>${resultRows(cc,counts,total)}`);}
+  if(election.congressMode==="party_pr"){
+    const counts={dem:0,rep:0};let total=0;
+    stateBallots.forEach(b=>{
+      const id=congressChoiceIds(b,election)[0];
+      if(id && counts[id]!==undefined){counts[id]++;total++;}
+    });
+    const seats=Math.max(1,parseInt(cfg.congress?.seats,10)||1);
+    const allocated=allocateCongressSeats(counts,seats);
+    parts.push(`<h5>Congressistas · ${seats} ${seats===1?'assento':'assentos'} · representação proporcional</h5>${congressPartyResultRows(counts,total,allocated)}`);
+  }else{
+    const cc=candidateList(cfg.congress?.candidates);
+    if(cc.length){
+      const counts=Object.fromEntries(cc.map(c=>[c.id,0]));let total=0;
+      stateBallots.forEach(b=>Object.keys(asObject(b.choices?.congress)).forEach(id=>{if(counts[id]!==undefined){counts[id]++;total++;}}));
+      parts.push(`<h5>Congressista(s) · ${cfg.congress?.seats||1} assento(s)</h5>${resultRows(cc,counts,total)}`);
+    }
+  }
   $("stateResults").innerHTML=`<div class="state-result-block"><div class="state-result-head">${escapeHtml(stateName(abbr))} · ${stateBallots.length} eleitor(es)</div><div class="state-result-body">${parts.join("")}</div></div>`;
 }
 
@@ -577,7 +705,8 @@ function renderAudit(election,ballotsObj){
   $("auditTableBody").innerHTML=entries.map(b=>{
     const p=candidateForElection(election,b.voter?.state,"president",b.choices?.president)?.name||"—";
     const g=candidateForElection(election,b.voter?.state,"governor",b.choices?.governor)?.name||"—";
-    const cs=Object.keys(asObject(b.choices?.congress)).map(id=>candidateForElection(election,b.voter?.state,"congress",id)?.name||`[${id}]`).join(", ")||"—";
+    const congressIds=congressChoiceIds(b,election);
+    const cs=congressIds.map(id=>candidateForElection(election,b.voter?.state,"congress",id)?.name||`[${id}]`).join(", ")||"—";
     const invalid=b.status==="invalid";
     return `<tr class="${invalid?'invalid':''}"><td><b>${escapeHtml(b.voter?.firstName)} ${escapeHtml(b.voter?.lastName)}</b><br><small>${escapeHtml(b.receiptCode||b.voteId||'')}</small></td><td>@${escapeHtml(b.voter?.discordNorm)}</td><td>${escapeHtml(stateName(b.voter?.state))}</td><td>${escapeHtml(p)}</td><td>${escapeHtml(g)}</td><td>${escapeHtml(cs)}</td><td>${escapeHtml(fmtDate(b.submittedAt))}</td><td><span class="audit-status ${invalid?'invalid':''}">${invalid?'Invalidado':'Válido'}</span>${invalid&&b.invalidReason?`<br><small>${escapeHtml(b.invalidReason)}</small>`:''}</td><td><button class="row-action" data-audit-key="${b.key}" data-invalid="${invalid?'1':'0'}">${invalid?'Restaurar':'Invalidar'}</button></td></tr>`;
   }).join("");
@@ -595,7 +724,7 @@ async function exportAuditCsv(){
   const id=auditElectionId;if(!id)return;const election=publicElections[id],ballots=await getAdminBallots(id,true);
   const rows=[["vote_id","receipt_code","status","nome","sobrenome","discord","estado","presidente","governador","congressistas","data_hora","motivo_invalidacao"]];
   Object.values(asObject(ballots)).forEach(b=>{
-    const st=b.voter?.state;const p=candidateForElection(election,st,"president",b.choices?.president)?.name||"";const g=candidateForElection(election,st,"governor",b.choices?.governor)?.name||"";const cs=Object.keys(asObject(b.choices?.congress)).map(cid=>candidateForElection(election,st,"congress",cid)?.name||cid).join(" | ");
+    const st=b.voter?.state;const p=candidateForElection(election,st,"president",b.choices?.president)?.name||"";const g=candidateForElection(election,st,"governor",b.choices?.governor)?.name||"";const cs=congressChoiceIds(b,election).map(cid=>candidateForElection(election,st,"congress",cid)?.name||cid).join(" | ");
     rows.push([b.voteId,b.receiptCode,b.status||"valid",b.voter?.firstName,b.voter?.lastName,b.voter?.discordNorm,st,p,g,cs,fmtDate(b.submittedAt),b.invalidReason||""]);
   });
   const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
@@ -611,7 +740,7 @@ $("identityForm").onsubmit=e=>{
   if(!first||!last||!norm||!state){showToast("Preencha todos os campos.");return;}
   if(norm.length<2||norm.length>64){showToast("Informe um @Discord válido.");return;}
   if(!currentElection.states?.[state]?.enabled){showToast("Esse estado não está habilitado nesta eleição.");return;}
-  voter={firstName:first,lastName:last,discordOriginal:raw,discordNorm:norm,state};selections={president:null,governor:null,congress:[]};buildBallotSteps();renderBallot();
+  voter={firstName:first,lastName:last,discordOriginal:raw,discordNorm:norm,state};selections={president:null,governor:null,congress:null};buildBallotSteps();renderBallot();
 };
 $("ballotBackBtn").onclick=()=>{if(ballotStepIndex===0)setScreen("screenIdentity");else{ballotStepIndex--;renderBallot();}};
 $("ballotNextBtn").onclick=()=>{if(!currentStepHasSelection()){showToast("Selecione pelo menos uma opção para continuar.");return;}if(ballotStepIndex<ballotSteps.length-1){ballotStepIndex++;renderBallot();}else renderReview();};
