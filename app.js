@@ -24,6 +24,9 @@ const FIREBASE_CONFIG = {
 const ADMIN_EMAIL = "khailanabdala15@gmail.com";
 const ADMIN_UID = "0s0BWZQW6cXy3OFQJbQGY59CW4J3";
 
+const ADMIN_EMAIL = "gdosreis60@gmail.com";
+const ADMIN_UID = "gaax9RSvooYNEBWam70Gj68Oysn1";
+
 const STATES = [
   ["AL","Alabama"],["AK","Alasca"],["AZ","Arizona"],["AR","Arkansas"],["CA","Califórnia"],
   ["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["DC","Distrito de Columbia"],["FL","Flórida"],
